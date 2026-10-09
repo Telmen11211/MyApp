@@ -1,180 +1,26 @@
-import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { challenges, useActivity } from '@/features/activity/activity-context';
+import { ChallengeRow, Icon, palette, PageTitle, s, Screen, useChallengeDetail } from '@/features/activity/ui';
 
-import { ExternalLink } from '@/components/external-link';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Collapsible } from '@/components/ui/collapsible';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-
-export default function TabTwoScreen() {
-  const safeAreaInsets = useSafeAreaInsets();
-  const insets = {
-    ...safeAreaInsets,
-    bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
-  };
-  const theme = useTheme();
-
-  const contentPlatformStyle = Platform.select({
-    android: {
-      paddingTop: insets.top,
-      paddingLeft: insets.left,
-      paddingRight: insets.right,
-      paddingBottom: insets.bottom,
-    },
-    web: {
-      paddingTop: Spacing.six,
-      paddingBottom: Spacing.four,
-    },
-  });
-
-  return (
-    <ScrollView
-      style={[styles.scrollView, { backgroundColor: theme.background }]}
-      contentInset={insets}
-      contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="subtitle">Explore</ThemedText>
-          <ThemedText style={styles.centerText} themeColor="textSecondary">
-            This starter app includes example{'\n'}code to help you get started.
-          </ThemedText>
-
-          <ExternalLink href="https://docs.expo.dev" asChild>
-            <Pressable style={({ pressed }) => pressed && styles.pressed}>
-              <ThemedView type="backgroundElement" style={styles.linkButton}>
-                <ThemedText type="link">Expo documentation</ThemedText>
-                <SymbolView
-                  tintColor={theme.text}
-                  name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}
-                  size={12}
-                />
-              </ThemedView>
-            </Pressable>
-          </ExternalLink>
-        </ThemedView>
-
-        <ThemedView style={styles.sectionsWrapper}>
-          <Collapsible title="File-based routing">
-            <ThemedText type="small">
-              This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
-              <ThemedText type="code">src/app/explore.tsx</ThemedText>
-            </ThemedText>
-            <ThemedText type="small">
-              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
-              the tab navigator.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/router/introduction">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Android, iOS, and web support">
-            <ThemedView type="backgroundElement" style={styles.collapsibleContent}>
-              <ThemedText type="small">
-                You can open this project on Android, iOS, and the web. To open the web version,
-                press <ThemedText type="smallBold">w</ThemedText> in the terminal running this
-                project.
-              </ThemedText>
-              <Image
-                source={require('@/assets/images/tutorial-web.png')}
-                style={styles.imageTutorial}
-              />
-            </ThemedView>
-          </Collapsible>
-
-          <Collapsible title="Images">
-            <ThemedText type="small">
-              For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
-              <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
-              screen densities.
-            </ThemedText>
-            <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
-            <ExternalLink href="https://reactnative.dev/docs/images">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Light and dark mode components">
-            <ThemedText type="small">
-              This template has light and dark mode support. The{' '}
-              <ThemedText type="code">useColorScheme()</ThemedText> hook lets you inspect what the
-              user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Animations">
-            <ThemedText type="small">
-              This template includes an example of an animated component. The{' '}
-              <ThemedText type="code">src/components/ui/collapsible.tsx</ThemedText> component uses
-              the powerful <ThemedText type="code">react-native-reanimated</ThemedText> library to
-              animate opening this hint.
-            </ThemedText>
-          </Collapsible>
-        </ThemedView>
-        {Platform.OS === 'web' && <WebBadge />}
-      </ThemedView>
-    </ScrollView>
-  );
+export default function ExploreScreen() {
+  const [category, setCategory] = useState('Бүгд');
+  const [query, setQuery] = useState('');
+  const { completed } = useActivity();
+  const detail = useChallengeDetail();
+  const visible = challenges.filter(item => (category === 'Бүгд' || item.category === category) && item.title.toLowerCase().includes(query.trim().toLowerCase()));
+  return <Screen>
+    <PageTitle eyebrow="ӨӨРИЙН ХЭМНЭЛЭЭ ОЛ" title="Өнөөдөр юу хийх вэ?" subtitle="Бие, сэтгэлдээ хэрэгтэй жижиг сорилтоо сонго." />
+    <View style={styles.search}><Icon name="challenge" size={19} color={palette.muted} /><TextInput accessibilityLabel="Сорилт хайх" value={query} onChangeText={setQuery} placeholder="Сорилтоо хайгаарай..." placeholderTextColor={palette.muted} style={styles.input} selectionColor={palette.lime} />{query.length > 0 && <Pressable accessibilityRole="button" accessibilityLabel="Хайлтыг цэвэрлэх" onPress={() => setQuery('')} style={styles.clear}><Icon name="close" size={18} /></Pressable>}</View>
+    <View style={styles.banner}><View style={{ flex: 1, gap: 10 }}><Text style={styles.bannerLabel}>ЧАМД ЗОРИУЛСАН</Text><Text style={styles.bannerTitle}>Өдөрт багахан цаг.{'\n'}Өөртөө том хөрөнгө оруулалт.</Text><Text style={styles.bannerBody}>2–20 минутын хялбар сорилтууд</Text></View><View style={styles.bannerIcon}><Icon name="mind" size={48} color="#C6B8F5" /></View></View>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>{['Бүгд', 'Хөдөлгөөн', 'Төвлөрөл', 'Өөртөө'].map(item => <Pressable accessibilityRole="button" accessibilityState={{ selected: category === item }} key={item} onPress={() => setCategory(item)} style={[styles.chip, category === item && styles.selectedChip]}><Text style={[styles.chipText, category === item && { color: palette.bg }]}>{item}</Text></Pressable>)}</ScrollView>
+    <View><View style={s.between}><Text style={s.sectionTitle}>{category === 'Бүгд' ? 'Бүх сорилтууд' : category}</Text><Text style={s.caption}>{visible.length} сорилт</Text></View>{visible.map(item => <ChallengeRow key={item.id} challenge={item} onPress={() => detail.open(item)} />)}{visible.length === 0 && <View style={styles.empty}><Icon name="sun" size={40} color={palette.muted} /><Text style={s.sectionTitle}>Сорилт олдсонгүй</Text><Text style={s.body}>Өөр үгээр хайх эсвэл ангиллаа солиорой.</Text></View>}</View>
+    <View style={[s.card, { flexDirection: 'row', alignItems: 'center', borderStyle: 'dashed' }]}><Icon name="check" color={palette.lime} /><View style={{ flex: 1, gap: 5 }}><Text style={s.rowTitle}>{completed.length > 0 ? `${completed.length} сорилт дуусгалаа. Гоё эхлэл!` : 'Эхний жижиг алхмаа хийгээрэй'}</Text><Text style={s.caption}>Өөрт тохирсон хурдаар урагшил.</Text></View></View>
+    {detail.modal}
+  </Screen>;
 }
-
 const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  container: {
-    maxWidth: MaxContentWidth,
-    flexGrow: 1,
-  },
-  titleContainer: {
-    gap: Spacing.three,
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.six,
-  },
-  centerText: {
-    textAlign: 'center',
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  linkButton: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
-    justifyContent: 'center',
-    gap: Spacing.one,
-    alignItems: 'center',
-  },
-  sectionsWrapper: {
-    gap: Spacing.five,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-  },
-  collapsibleContent: {
-    alignItems: 'center',
-  },
-  imageTutorial: {
-    width: '100%',
-    aspectRatio: 296 / 171,
-    borderRadius: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  imageReact: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
-  },
+  search: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.card, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: palette.line }, input: { flex: 1, paddingVertical: 16, color: palette.text, fontSize: 13 }, clear: { padding: 10 },
+  banner: { flexDirection: 'row', gap: 10, alignItems: 'center', padding: 22, borderRadius: 24, backgroundColor: '#2C2738', borderWidth: 1, borderColor: '#443951' }, bannerLabel: { color: '#C6B8F5', letterSpacing: 1.5, fontSize: 9, fontWeight: '700' }, bannerTitle: { color: '#F1ECFF', fontSize: 19, lineHeight: 28, fontWeight: '600', letterSpacing: -0.5 }, bannerBody: { color: '#B1A6C6', fontSize: 11, lineHeight: 18 }, bannerIcon: { width: 65, height: 86, borderRadius: 30, backgroundColor: '#3B334A', alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '12deg' }] },
+  chip: { borderWidth: 1, borderColor: palette.line, paddingHorizontal: 17, minHeight: 43, borderRadius: 22, justifyContent: 'center' }, selectedChip: { backgroundColor: palette.lime, borderColor: palette.lime }, chipText: { color: palette.muted, fontSize: 12, fontWeight: '600' }, empty: { alignItems: 'center', paddingVertical: 45, gap: 15 },
 });

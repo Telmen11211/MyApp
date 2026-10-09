@@ -1,71 +1,49 @@
-import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { challenges, useActivity } from '@/features/activity/activity-context';
+import { Button, ChallengeRow, Icon, palette, s, Screen, Section, useChallengeDetail } from '@/features/activity/ui';
 
-type Product = { id: number; name: string; category: string; price: number; icon: string; color: string };
-const products: Product[] = [
-  { id: 1, name: 'Өдөр тутмын үүргэвч', category: 'Аксессуар', price: 89000, icon: '🎒', color: '#2C2925' },
-  { id: 2, name: 'Утасгүй чихэвч', category: 'Технологи', price: 129000, icon: '🎧', color: '#272C3B' },
-  { id: 3, name: 'Зөөлөн цамц', category: 'Хувцас', price: 69000, icon: '👕', color: '#25332B' },
-  { id: 4, name: 'Керамик аяга', category: 'Гэр ахуй', price: 29000, icon: '☕', color: '#382B27' },
-];
-const categories = ['Бүгд', 'Хувцас', 'Технологи', 'Аксессуар', 'Гэр ахуй'];
-const money = (value: number) => `${value.toLocaleString('en-US')} ₮`;
-
-export default function HomeScreen() {
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState('Бүгд');
-  const [favorites, setFavorites] = useState<number[]>([]);
-  const [cart, setCart] = useState<number[]>([]);
-  const [cartOpen, setCartOpen] = useState(false);
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [saleOnly, setSaleOnly] = useState(false);
-  const visible = products.filter(p => (category === 'Бүгд' || p.category === category) && p.name.toLowerCase().includes(query.trim().toLowerCase()) && (!favoritesOnly || favorites.includes(p.id)) && (!saleOnly || p.id <= 2));
-  const total = cart.reduce((sum, id) => sum + products.find(p => p.id === id)!.price, 0);
-
-  return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <View><Text style={styles.eyebrow}>ӨДӨР БҮРИЙН ШИНЭ СОНГОЛТ</Text><Text style={styles.logo}>Sonder<Text style={styles.dot}>.</Text></Text></View>
-          <Pressable accessibilityRole="button" accessibilityLabel={`Сагс, ${cart.length} бараа`} onPress={() => setCartOpen(true)} style={styles.cartButton}><Text style={styles.cartIcon}>🛍</Text><View style={styles.badge}><Text style={styles.badgeText}>{cart.length}</Text></View></Pressable>
-        </View>
-        <Text style={styles.greeting}>Өөртөө таалагдахыг ол.</Text>
-        <Text style={styles.subtitle}>Таны өдөр тутмыг илүү гоё болгох зүйлс.</Text>
-        <View style={styles.search}><Text style={styles.searchIcon}>⌕</Text><TextInput accessibilityLabel="Бараа хайх" placeholder="Юу хайж байна вэ?" placeholderTextColor="#A6AE9E" keyboardAppearance="dark" selectionColor="#B5D879" value={query} onChangeText={setQuery} style={styles.input} />{query.length > 0 && <Pressable accessibilityRole="button" accessibilityLabel="Хайлтыг цэвэрлэх" onPress={() => setQuery('')}><Text style={styles.searchIcon}>×</Text></Pressable>}</View>
-        <View style={styles.hero}>
-          <View style={styles.heroCopy}><Text style={styles.heroLabel}>ШИНЭ УЛИРАЛ • ШИНЭ МЭДРЭМЖ</Text><Text style={styles.heroTitle}>Жижиг зүйлс.{'\n'}Том баяр баясал.</Text><Text style={styles.heroSubtitle}>Онцлох сонголтуудаа нээгээрэй.</Text><Pressable accessibilityRole="button" onPress={() => { setSaleOnly(true); setCategory('Бүгд'); setQuery(''); setFavoritesOnly(false); }} style={styles.heroButton}><Text style={styles.heroButtonText}>Сонголтуудыг үзэх  ↗</Text></Pressable></View>
-          <View style={styles.heroArt}><Text style={styles.heroEmoji}>🛍️</Text><View style={styles.heroTag}><Text style={styles.heroTagText}>ОНЦЛОХ</Text></View></View>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>{categories.map(item => <Pressable key={item} accessibilityRole="button" accessibilityState={{ selected: category === item }} onPress={() => { setCategory(item); setSaleOnly(false); }} style={[styles.chip, category === item && styles.chipActive]}><Text style={[styles.chipText, category === item && styles.chipTextActive]}>{item}</Text></Pressable>)}</ScrollView>
-        <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>{favoritesOnly ? 'Дуртай бараа' : saleOnly ? 'Онцлох сонголт' : 'Танд санал болгох'}</Text><Pressable accessibilityRole="button" onPress={() => setFavoritesOnly(!favoritesOnly)}><Text style={styles.sectionAction}>{favoritesOnly ? 'Бүгдийг үзэх' : 'Дуртай ♡'}</Text></Pressable></View>
-        <View style={styles.grid}>{visible.map(product => <View key={product.id} style={styles.product}>
-          <View style={[styles.productImage, { backgroundColor: product.color }]}><Text style={styles.productEmoji}>{product.icon}</Text><Pressable accessibilityRole="button" accessibilityLabel={`${product.name}: дуртай бараа`} accessibilityState={{ selected: favorites.includes(product.id) }} onPress={() => setFavorites(old => old.includes(product.id) ? old.filter(id => id !== product.id) : [...old, product.id])} style={styles.favorite}><Text style={[styles.heart, favorites.includes(product.id) && styles.heartActive]}>{favorites.includes(product.id) ? '♥' : '♡'}</Text></Pressable></View>
-          <Text style={styles.productCategory}>{product.category}</Text><Text style={styles.productName}>{product.name}</Text><View style={styles.priceRow}><Text style={styles.price}>{money(product.price)}</Text><Pressable accessibilityRole="button" accessibilityLabel={`${product.name} сагсанд нэмэх`} onPress={() => setCart(old => [...old, product.id])} style={styles.add}><Text style={styles.addText}>+</Text></Pressable></View>
-        </View>)}</View>
-        {visible.length === 0 && <View style={styles.empty}><Text style={styles.sectionTitle}>Бараа олдсонгүй</Text><Text style={styles.subtitle}>Хайлт эсвэл ангиллаа өөрчилж үзээрэй.</Text></View>}
-        <View style={styles.delivery}><Text style={styles.deliveryIcon}>📦</Text><View style={styles.deliveryCopy}><Text style={styles.deliveryTitle}>Таны дараагийн дуртай зүйл энд бий.</Text><Text style={styles.deliveryText}>Бараан дээрх + товчоор сагсандаа нэмээрэй.</Text></View></View>
-        <Text style={styles.footer}>SONDER • Жишээ дэлгүүр</Text>
-      </ScrollView>
-      <Modal visible={cartOpen} animationType="slide" onRequestClose={() => setCartOpen(false)}><SafeAreaView style={styles.root}><View style={styles.modalHeader}><Text style={styles.sectionTitle}>Миний сагс ({cart.length})</Text><Pressable accessibilityRole="button" accessibilityLabel="Сагсыг хаах" onPress={() => setCartOpen(false)} style={styles.cartButton}><Text style={styles.searchIcon}>×</Text></Pressable></View><ScrollView contentContainerStyle={styles.cartContent}>{products.filter(p => cart.includes(p.id)).map(p => <View key={p.id} style={styles.cartRow}><Text style={styles.cartIcon}>{p.icon}</Text><View style={styles.deliveryCopy}><Text style={styles.productName}>{p.name}</Text><Text style={styles.subtitle}>{cart.filter(id => id === p.id).length} ширхэг · {money(p.price)}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={`${p.name} нэг ширхгийг хасах`} onPress={() => setCart(old => { const next = [...old]; next.splice(next.indexOf(p.id), 1); return next; })} style={styles.add}><Text style={styles.addText}>−</Text></Pressable></View>)}{cart.length === 0 && <Text style={styles.subtitle}>Сагс хоосон байна. Таалагдсан бараагаа нэмээрэй.</Text>}<View style={styles.sectionHeader}><Text style={styles.sectionTitle}>Нийт</Text><Text style={styles.price}>{money(total)}</Text></View><Text style={styles.deliveryText}>Энэ нь жишээ сагс. Төлбөр болон захиалга хараахан холбогдоогүй.</Text></ScrollView></SafeAreaView></Modal>
-    </SafeAreaView>
-  );
+export default function TodayScreen() {
+  const { name, completed, points } = useActivity();
+  const detail = useChallengeDetail();
+  const daily = challenges.slice(0, 3);
+  const count = daily.filter(item => completed.includes(item.id)).length;
+  const now = new Date();
+  const weekday = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'][now.getDay()];
+  return <Screen>
+    <View style={s.between}><View style={styles.brand}><View style={styles.brandMark}><Icon name="challenge" size={21} color={palette.bg} /></View><Text style={styles.wordmark}>dayly<Text style={{ color: palette.lime }}>.</Text></Text></View><Pressable accessibilityRole="button" accessibilityLabel="Профайл нээх" onPress={() => router.navigate('/profile')} style={styles.avatar}><Text style={styles.avatarText}>{name.slice(0, 1)}</Text></Pressable></View>
+    <View style={{ gap: 9 }}><Text style={s.eyebrow}>{now.getMonth() + 1}-Р САРЫН {now.getDate()} · {weekday.toUpperCase()}</Text><Text style={s.title}>Жижиг алхам.{'\n'}<Text style={{ color: palette.lime }}>Илүү сайхан өдөр.</Text></Text><Text style={s.body}>Сайн уу, {name}. Өнөөдөр өөртөө цаг гаргая.</Text></View>
+    <View style={styles.week}>{Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(now); const offset = (now.getDay() + 6) % 7; date.setDate(now.getDate() - offset + index);
+      const today = index === offset;
+      return <View key={index} style={[styles.day, today && styles.today]}><Text style={[styles.dayLabel, today && styles.dark]}>{['Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя', 'Ня'][index]}</Text><Text style={[styles.dayNumber, today && styles.dark]}>{date.getDate()}</Text><View style={[styles.dayDot, today && { backgroundColor: palette.bg }]} /></View>;
+    })}</View>
+    <View style={styles.hero}>
+      <View style={s.between}><View style={styles.heroBadge}><View style={styles.liveDot} /><Text style={styles.heroLabel}>ӨНӨӨДРИЙН ГОЛ СОРИЛТ</Text></View><Text style={styles.heroIndex}>01 / 03</Text></View>
+      <View style={styles.heroVisual}>
+        <View style={styles.orbitOuter} /><View style={styles.orbitInner} />
+        <View style={styles.sparkOne}><Icon name="mind" size={26} color="#536333" /></View>
+        <View style={styles.sparkTwo}><Icon name="sun" size={23} color="#536333" /></View>
+        <View style={styles.walkCircle}><Icon name="walk" size={86} color="#263519" /></View>
+        <View style={styles.floatingTag}><Icon name="challenge" size={15} color={palette.bg} /><Text style={styles.floatingText}>+100 XP</Text></View>
+      </View>
+      <Text style={styles.heroTitle}>Өглөөг шинэ challenge-ээр эхлүүл</Text><Text style={styles.heroDescription}>20 минутын алхалт.</Text>
+      <View style={[s.row, { gap: 18, marginVertical: 6 }]}><View style={[s.row, { gap: 5 }]}><Icon name="clock" size={15} color="#485834" /><Text style={styles.heroMeta}>20 минут</Text></View><View style={[s.row, { gap: 8 }]}><Text style={styles.heroMeta}>↗  Хөнгөн</Text><Text style={styles.heroMeta}>Хөдөлгөөн</Text></View></View>
+      <Pressable accessibilityRole="button" onPress={() => detail.open(challenges[0])} style={({ pressed }) => [styles.heroButton, pressed && { opacity: 0.8 }]}><Text style={styles.heroButtonText}>{completed.includes('walk') ? 'Сорилт дууссан ✓' : 'Өнөөдрийн сорилтоо эхлүүлье'}</Text><Icon name="arrow" size={20} color={palette.lime} /></Pressable>
+    </View>
+    <View style={styles.stats}><View style={styles.stat}><Icon name="check" size={20} color={palette.lime} /><Text style={styles.statNumber}>{count}<Text style={styles.statSuffix}> / 3</Text></Text><Text style={s.caption}>Өдрийн сорилт</Text></View><View style={styles.statDivider} /><View style={styles.stat}><Icon name="challenge" size={20} color="#F4D785" /><Text style={styles.statNumber}>{points}<Text style={styles.statSuffix}> XP</Text></Text><Text style={s.caption}>Өнөөдрийн оноо</Text></View></View>
+    <View><Section title="Өөртөө өгөх жижиг завсарлага" action="Бүгд" onPress={() => router.navigate('/explore')} />{daily.slice(1).map(item => <ChallengeRow key={item.id} challenge={item} onPress={() => detail.open(item)} />)}</View>
+    {count === 3 && <Button label="Өнөөдрийн ахицаа харах" onPress={() => router.navigate('/progress')} />}
+    <Text style={styles.footer}>Төгс байх албагүй. Өнөөдөр эхлэхэд л болно.</Text>
+    {detail.modal}
+  </Screen>;
 }
-
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#111510' },
-  content: { padding: 22, paddingBottom: 110, gap: 18, width: '100%', maxWidth: 700, alignSelf: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  eyebrow: { fontSize: 9, letterSpacing: 2, fontWeight: '700', color: '#A0AA96' },
-  logo: { fontSize: 34, fontWeight: '800', letterSpacing: -1.5, color: '#F2F5ED' }, dot: { color: '#B5D879' },
-  cartButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#20271D', alignItems: 'center', justifyContent: 'center' }, cartIcon: { fontSize: 24 },
-  badge: { position: 'absolute', right: 0, top: 0, borderRadius: 10, minWidth: 20, height: 20, backgroundColor: '#B5D879', alignItems: 'center', justifyContent: 'center' }, badgeText: { color: '#17210F', fontSize: 10, fontWeight: '700' },
-  greeting: { fontSize: 25, fontWeight: '700', color: '#F2F5ED', marginTop: 8 }, subtitle: { fontSize: 13, color: '#A6AE9E', lineHeight: 20 },
-  search: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#20271D', borderRadius: 16, paddingHorizontal: 16, minHeight: 52 }, searchIcon: { fontSize: 27, color: '#B7C2AB' }, input: { flex: 1, fontSize: 14, color: '#F2F5ED', paddingVertical: 14 },
-  hero: { backgroundColor: '#28361F', borderRadius: 24, padding: 22, flexDirection: 'row', overflow: 'hidden', alignItems: 'center' }, heroCopy: { flex: 1, zIndex: 1 }, heroLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 1, color: '#BACCA3' }, heroTitle: { fontSize: 27, lineHeight: 34, fontWeight: '800', color: '#F0F6E6', marginTop: 14 }, heroSubtitle: { fontSize: 12, color: '#BACCA3', marginTop: 10, lineHeight: 18 }, heroButton: { alignSelf: 'flex-start', backgroundColor: '#B5D879', borderRadius: 12, paddingHorizontal: 15, paddingVertical: 13, marginTop: 20 }, heroButtonText: { fontSize: 12, fontWeight: '600', color: '#17210F' }, heroArt: { alignItems: 'center', width: 82 }, heroEmoji: { fontSize: 74, transform: [{ rotate: '-12deg' }] }, heroTag: { backgroundColor: '#111510', padding: 8, borderRadius: 8, marginTop: 14, transform: [{ rotate: '8deg' }] }, heroTagText: { fontSize: 9, letterSpacing: 1, fontWeight: '800', color: '#B5D879' },
-  categories: { gap: 8, paddingVertical: 4 }, chip: { paddingHorizontal: 17, paddingVertical: 13, borderRadius: 24, borderWidth: 1, borderColor: '#35402E', backgroundColor: '#20271D' }, chipActive: { backgroundColor: '#B5D879', borderColor: '#B5D879' }, chipText: { fontSize: 12, color: '#BBC5AF', fontWeight: '600' }, chipTextActive: { color: '#17210F' },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }, sectionTitle: { fontSize: 19, fontWeight: '700', color: '#F2F5ED' }, sectionAction: { fontSize: 12, color: '#BACCA3', paddingVertical: 12 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 24 }, product: { width: '47%' }, productImage: { aspectRatio: 1, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }, productEmoji: { fontSize: 66 }, favorite: { position: 'absolute', top: 10, right: 10, backgroundColor: '#20271DCC', borderRadius: 18, width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }, heart: { fontSize: 23, color: '#CFD9C3' }, heartActive: { color: '#FF9690' }, productCategory: { fontSize: 10, color: '#A1AE95', marginTop: 13 }, productName: { fontSize: 14, fontWeight: '600', color: '#E5EBDD', marginTop: 5, lineHeight: 20 }, priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }, price: { fontSize: 16, fontWeight: '800', color: '#B5D879' }, add: { width: 38, height: 38, backgroundColor: '#2E3D24', borderRadius: 12, alignItems: 'center', justifyContent: 'center' }, addText: { fontSize: 23, color: '#B5D879' },
-  empty: { paddingVertical: 30, gap: 12 }, delivery: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#20271D', padding: 18, borderRadius: 18, marginTop: 8 }, deliveryIcon: { fontSize: 25 }, deliveryCopy: { flex: 1 }, deliveryTitle: { fontSize: 12, fontWeight: '700', color: '#D5E1C6', lineHeight: 18 }, deliveryText: { fontSize: 11, color: '#ADB89F', lineHeight: 18, marginTop: 4 }, footer: { textAlign: 'center', color: '#A1AE95', fontSize: 10, letterSpacing: 2, marginTop: 10 },
-  modalHeader: { padding: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, cartContent: { padding: 22, gap: 24 }, cartRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 9 }, brandMark: { width: 29, height: 32, borderRadius: 10, backgroundColor: palette.lime, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-8deg' }] },
+  wordmark: { fontSize: 30, fontWeight: '800', letterSpacing: -1.5, color: palette.text }, avatar: { width: 43, height: 43, borderRadius: 22, borderWidth: 1, borderColor: '#4D5741', backgroundColor: '#303C26', alignItems: 'center', justifyContent: 'center' }, avatarText: { fontSize: 17, color: palette.lime, fontWeight: '600' },
+  week: { flexDirection: 'row', justifyContent: 'space-between', gap: 5 }, day: { flex: 1, alignItems: 'center', gap: 9, paddingVertical: 13, borderRadius: 19, backgroundColor: palette.card }, today: { backgroundColor: palette.lime }, dayLabel: { fontSize: 10, color: palette.muted, fontWeight: '600' }, dayNumber: { fontSize: 16, color: palette.text, fontWeight: '600' }, dayDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#434A3C' }, dark: { color: palette.bg },
+  hero: { padding: 22, borderRadius: 28, backgroundColor: palette.lime, gap: 11, overflow: 'hidden' }, heroBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 }, liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#435A21' }, heroLabel: { color: '#3B4C26', fontWeight: '700', letterSpacing: 1, fontSize: 9 }, heroIndex: { color: '#5D7041', fontSize: 10, fontWeight: '600' },
+  heroVisual: { height: 177, alignItems: 'center', justifyContent: 'center' }, orbitOuter: { width: 240, height: 155, borderRadius: 100, borderWidth: 1, borderColor: '#A9CA5B', position: 'absolute', transform: [{ rotate: '-22deg' }] }, orbitInner: { width: 194, height: 131, borderRadius: 100, borderWidth: 1, borderColor: '#B9D96D', position: 'absolute', transform: [{ rotate: '20deg' }] }, walkCircle: { width: 132, height: 132, borderRadius: 66, backgroundColor: '#C2E365', alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-10deg' }] }, floatingTag: { position: 'absolute', bottom: 8, right: '15%', backgroundColor: '#F1FFC9', borderRadius: 12, flexDirection: 'row', gap: 3, paddingHorizontal: 11, paddingVertical: 8, transform: [{ rotate: '-8deg' }] }, floatingText: { fontWeight: '800', fontSize: 12, color: palette.bg }, sparkOne: { position: 'absolute', left: '12%', top: 20 }, sparkTwo: { position: 'absolute', right: '8%', top: 48 },
+  heroTitle: { color: '#1D2C13', fontSize: 26, fontWeight: '800', letterSpacing: -1 }, heroDescription: { color: '#4A5E32', fontSize: 12, lineHeight: 19 }, heroMeta: { fontSize: 10, fontWeight: '600', color: '#485834' }, heroButton: { minHeight: 53, borderRadius: 15, backgroundColor: '#1E2A16', padding: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }, heroButtonText: { color: '#F0FAD9', fontSize: 12, fontWeight: '600' },
+  stats: { flexDirection: 'row', backgroundColor: palette.card, padding: 20, borderRadius: 22, alignItems: 'center' }, stat: { flex: 1, gap: 8, alignItems: 'center' }, statNumber: { fontSize: 28, fontWeight: '700', color: palette.text, letterSpacing: -1 }, statSuffix: { fontSize: 15, fontWeight: '400', color: palette.muted }, statDivider: { width: 1, height: 62, backgroundColor: palette.line }, footer: { textAlign: 'center', color: '#78836F', fontSize: 11, paddingVertical: 8 },
 });

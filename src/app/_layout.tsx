@@ -1,18 +1,16 @@
 import { DarkTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
-
-SplashScreen.preventAutoHideAsync();
+import { ActivityProvider } from '@/features/activity/activity-context';
 
 export default function TabLayout() {
   return (
     <ThemeProvider value={DarkTheme}>
       <StatusBar style="light" />
-      <AnimatedSplashOverlay />
-      <AppTabs />
+      <ActivityProvider>
+        <AppTabs />
+      </ActivityProvider>
     </ThemeProvider>
   );
 }
