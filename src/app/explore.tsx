@@ -1,26 +1,27 @@
+import { Palette } from '@/features/activity/appearance';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { challenges, useActivity } from '@/features/activity/activity-context';
-import { ChallengeRow, Icon, palette, PageTitle, s, Screen, useChallengeDetail } from '@/features/activity/ui';
-
+import { Challenge } from '@/features/activity/model';
+import { HabitEditor } from '@/features/activity/habit-editor';
+import { useUI, useStyles, Button, Icon, PageTitle, Screen } from '@/features/activity/ui';
 export default function ExploreScreen() {
+  const { palette, s } = useUI();
+  const styles = useStyles(makeStyles);
+  const { habits, archiveHabit } = useActivity();
   const [category, setCategory] = useState('Бүгд');
   const [query, setQuery] = useState('');
-  const { completed } = useActivity();
-  const detail = useChallengeDetail();
-  const visible = challenges.filter(item => (category === 'Бүгд' || item.category === category) && item.title.toLowerCase().includes(query.trim().toLowerCase()));
+  const [editor, setEditor] = useState<Challenge | 'new' | null>(null);
+  const visible = challenges.filter(h => (category === 'Бүгд' || h.category === category) && h.title.toLowerCase().includes(query.trim().toLowerCase()));
   return <Screen>
-    <PageTitle eyebrow="ӨӨРИЙН ХЭМНЭЛЭЭ ОЛ" title="Өнөөдөр юу хийх вэ?" subtitle="Бие, сэтгэлдээ хэрэгтэй жижиг сорилтоо сонго." />
-    <View style={styles.search}><Icon name="challenge" size={19} color={palette.muted} /><TextInput accessibilityLabel="Сорилт хайх" value={query} onChangeText={setQuery} placeholder="Сорилтоо хайгаарай..." placeholderTextColor={palette.muted} style={styles.input} selectionColor={palette.lime} />{query.length > 0 && <Pressable accessibilityRole="button" accessibilityLabel="Хайлтыг цэвэрлэх" onPress={() => setQuery('')} style={styles.clear}><Icon name="close" size={18} /></Pressable>}</View>
-    <View style={styles.banner}><View style={{ flex: 1, gap: 10 }}><Text style={styles.bannerLabel}>ЧАМД ЗОРИУЛСАН</Text><Text style={styles.bannerTitle}>Өдөрт багахан цаг.{'\n'}Өөртөө том хөрөнгө оруулалт.</Text><Text style={styles.bannerBody}>2–20 минутын хялбар сорилтууд</Text></View><View style={styles.bannerIcon}><Icon name="mind" size={48} color="#C6B8F5" /></View></View>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>{['Бүгд', 'Хөдөлгөөн', 'Төвлөрөл', 'Өөртөө'].map(item => <Pressable accessibilityRole="button" accessibilityState={{ selected: category === item }} key={item} onPress={() => setCategory(item)} style={[styles.chip, category === item && styles.selectedChip]}><Text style={[styles.chipText, category === item && { color: palette.bg }]}>{item}</Text></Pressable>)}</ScrollView>
-    <View><View style={s.between}><Text style={s.sectionTitle}>{category === 'Бүгд' ? 'Бүх сорилтууд' : category}</Text><Text style={s.caption}>{visible.length} сорилт</Text></View>{visible.map(item => <ChallengeRow key={item.id} challenge={item} onPress={() => detail.open(item)} />)}{visible.length === 0 && <View style={styles.empty}><Icon name="sun" size={40} color={palette.muted} /><Text style={s.sectionTitle}>Сорилт олдсонгүй</Text><Text style={s.body}>Өөр үгээр хайх эсвэл ангиллаа солиорой.</Text></View>}</View>
-    <View style={[s.card, { flexDirection: 'row', alignItems: 'center', borderStyle: 'dashed' }]}><Icon name="check" color={palette.lime} /><View style={{ flex: 1, gap: 5 }}><Text style={s.rowTitle}>{completed.length > 0 ? `${completed.length} сорилт дуусгалаа. Гоё эхлэл!` : 'Эхний жижиг алхмаа хийгээрэй'}</Text><Text style={s.caption}>Өөрт тохирсон хурдаар урагшил.</Text></View></View>
-    {detail.modal}
+    <PageTitle title="Дадлын санаанууд" />
+    <Button label="Өөрийн дадал үүсгэх" onPress={() => setEditor('new')} />
+    <TextInput accessibilityLabel="Дадлын санаа хайх" value={query} onChangeText={setQuery} placeholder="Дадлын санаа хайх…" placeholderTextColor={palette.muted} style={styles.input} />
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{['Бүгд','Хөдөлгөөн','Төвлөрөл','Өөртөө'].map(c => <Pressable key={c} accessibilityRole="button" accessibilityState={{ selected: category === c }} onPress={() => setCategory(c)} style={[styles.chip, category === c && { backgroundColor: palette.primary }]}><Text style={{ color: category === c ? palette.onAccent : palette.muted, fontSize: 12 }}>{c}</Text></Pressable>)}</View>
+    {visible.map(h => { const added = habits.some(item => !item.archived && item.id === h.id); return <View key={h.id} style={[s.card, { gap: 15 }]}><View style={s.row}><View style={[s.iconBox, { backgroundColor: `${h.color}18` }]}><Icon name={h.icon} color={h.color} /></View><View style={{ flex: 1, gap: 6 }}><Text style={s.sectionTitle}>{h.title}</Text><Text style={s.caption}>{h.category} · {h.minutes} мин</Text></View></View><Text style={s.body}>{h.description}</Text><Button secondary={added} disabled={added} label={added ? 'Миний дадалд нэмэгдсэн ✓' : 'Өөртөө тохируулж нэмэх'} onPress={() => setEditor(h)} /></View>; })}
+    {!visible.length && <Text style={s.body}>Тохирох санаа алга. Өөрийн дадлыг үүсгэж болно.</Text>}
+    {habits.some(h => h.archived) && <View style={s.card}><Text style={s.sectionTitle}>Архивласан дадлууд</Text><Text style={s.caption}>Сэргээхэд сануулга унтраалттай байна.</Text>{habits.filter(h => h.archived).map(h => <View key={h.id} style={s.between}><Text style={[s.rowTitle, { flex: 1 }]}>{h.title}</Text><Pressable accessibilityRole="button" onPress={() => archiveHabit(h.id)} style={s.smallAction}><Text style={s.link}>Сэргээх</Text></Pressable></View>)}</View>}
+    {editor && <HabitEditor habit={editor === 'new' ? undefined : editor} onClose={() => setEditor(null)} />}
   </Screen>;
 }
-const styles = StyleSheet.create({
-  search: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.card, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: palette.line }, input: { flex: 1, paddingVertical: 16, color: palette.text, fontSize: 13 }, clear: { padding: 10 },
-  banner: { flexDirection: 'row', gap: 10, alignItems: 'center', padding: 22, borderRadius: 24, backgroundColor: '#2C2738', borderWidth: 1, borderColor: '#443951' }, bannerLabel: { color: '#C6B8F5', letterSpacing: 1.5, fontSize: 9, fontWeight: '700' }, bannerTitle: { color: '#F1ECFF', fontSize: 19, lineHeight: 28, fontWeight: '600', letterSpacing: -0.5 }, bannerBody: { color: '#B1A6C6', fontSize: 11, lineHeight: 18 }, bannerIcon: { width: 65, height: 86, borderRadius: 30, backgroundColor: '#3B334A', alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '12deg' }] },
-  chip: { borderWidth: 1, borderColor: palette.line, paddingHorizontal: 17, minHeight: 43, borderRadius: 22, justifyContent: 'center' }, selectedChip: { backgroundColor: palette.lime, borderColor: palette.lime }, chipText: { color: palette.muted, fontSize: 12, fontWeight: '600' }, empty: { alignItems: 'center', paddingVertical: 45, gap: 15 },
-});
+const makeStyles = (palette: Palette) => StyleSheet.create({ input: { backgroundColor: palette.card, color: palette.text, padding: 17, borderRadius: 16, borderWidth: 1, borderColor: palette.line, fontSize: 14 }, chip: { paddingHorizontal: 16, minHeight: 44, borderWidth: 1, borderColor: palette.line, borderRadius: 22, justifyContent: 'center' } });

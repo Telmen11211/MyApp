@@ -1,27 +1,42 @@
 import { useState } from 'react';
-import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useActivity } from '@/features/activity/activity-context';
-import { Button, Icon, palette, PageTitle, s, Screen } from '@/features/activity/ui';
-
+import { Palette } from '@/features/activity/appearance';
+import { useSettingsDrawer } from '@/features/activity/settings-drawer';
+import { Button, Icon, PageTitle, Screen, useStyles, useUI } from '@/features/activity/ui';
 export default function ProfileScreen() {
-  const { name, setName, points, completed } = useActivity();
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(name);
-  const [focus, setFocus] = useState('Тэнцвэртэй');
-  const [about, setAbout] = useState(false);
+  const { palette, s } = useUI();
+  const styles = useStyles(makeStyles);
+  const openSettings = useSettingsDrawer();
+  const { name, store, createDemoAccount, setDemoSignedIn } = useActivity();
+  const [accountName, setAccountName] = useState(name);
+  const [email, setEmail] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [message, setMessage] = useState('');
+  const [formError, setFormError] = useState('');
+  const signedIn = Boolean(store.demoAccount && store.demoSignedIn);
+  const create = () => {
+    if (!accountName.trim()) return setFormError('Нэрээ оруулна уу.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setFormError('Имэйл хаягаа зөв оруулна уу.');
+    createDemoAccount(accountName,email); setCreating(false); setFormError(''); setMessage('Демо аккаунт үүсгэлээ.');
+  };
   return <Screen>
-    <PageTitle eyebrow="ӨӨРТӨӨ ЦАГ ГАРГА" title="Миний орон зай" subtitle="Өдөр бүр өөрийнхөө илүү сайн хувилбар луу." />
-    <View style={styles.identity}><View style={styles.avatar}><Text style={styles.initial}>{name.slice(0, 1)}</Text><View style={styles.avatarStar}><Icon name="mind" size={16} color={palette.bg} /></View></View><Text style={styles.name}>{name}</Text><View style={s.pill}><Text style={s.pillText}>ӨӨРИЙН ХЭМНЭЛЭЭ ОЛЖ БУЙ НЭГЭН</Text></View><Pressable accessibilityRole="button" onPress={() => { setDraft(name); setEditing(!editing); }} style={styles.edit}><Icon name="edit" size={15} color={palette.muted} /><Text style={s.caption}>{editing ? 'Болих' : 'Нэрээ өөрчлөх'}</Text></Pressable></View>
-    {editing && <View style={s.card}><Text style={s.rowTitle}>Чамайг хэн гэж дуудах вэ?</Text><TextInput accessibilityLabel="Таны нэр" value={draft} onChangeText={setDraft} maxLength={24} style={styles.input} selectionColor={palette.lime} autoFocus /><Button label="Хадгалах" onPress={() => { if (draft.trim()) { setName(draft.trim()); setEditing(false); } }} />{!draft.trim() && <Text style={s.caption}>Нэрээ оруулаарай.</Text>}</View>}
-    <View style={styles.level}><View style={s.between}><View style={s.row}><Icon name="challenge" color={palette.lime} /><Text style={s.rowTitle}>{points >= 200 ? 'Сайн хэмнэл' : 'Шинэ эхлэл'}</Text></View><Text style={s.link}>{points} XP</Text></View><View style={styles.track}><View style={[styles.fill, { width: `${Math.min(points / 200 * 100, 100)}%` }]} /></View><Text style={s.caption}>{points >= 200 ? '200 XP-ийн эхний зорилгодоо хүрлээ!' : `Дараагийн түвшинд ${200 - points} XP үлдлээ.`}</Text></View>
-    <View style={{ gap: 15 }}><Text style={s.sectionTitle}>Чиний чиглэл</Text><Text style={s.caption}>Өөртөө зориулсан зорилгоо сонгоорой.</Text><View style={styles.focusOptions}>{['Тэнцвэртэй', 'Идэвхтэй', 'Тайван'].map(item => <Pressable accessibilityRole="button" accessibilityState={{ selected: focus === item }} key={item} onPress={() => setFocus(item)} style={[styles.option, focus === item && styles.selected]}><Text style={[styles.optionText, focus === item && { color: palette.lime }]}>{item}</Text></Pressable>)}</View><Text style={styles.focusHint}>{focus === 'Идэвхтэй' ? 'Хөдөлгөөнтэй сорилтуудаас өдрөө эхлүүлээрэй.' : focus === 'Тайван' ? 'Амьсгал, уншлагаар өөртөө тайван мөч бүтээгээрэй.' : 'Хөдөлгөөн, төвлөрөл, амралтдаа тэнцүү цаг гаргаарай.'}</Text></View>
-    <View style={styles.menu}><Pressable accessibilityRole="button" onPress={() => router.navigate('/progress')} style={styles.menuRow}><Icon name="trophy" size={22} color="#F4D785" /><View style={{ flex: 1, gap: 4 }}><Text style={s.rowTitle}>Миний амжилтууд</Text><Text style={s.caption}>Өнөөдөр {completed.length} сорилт дууссан</Text></View><Icon name="right" size={18} color={palette.muted} /></Pressable><Pressable accessibilityRole="button" accessibilityState={{ expanded: about }} onPress={() => setAbout(!about)} style={styles.menuRow}><Icon name="sun" size={22} color="#C6B8F5" /><Text style={[s.rowTitle, { flex: 1 }]}>Dayly-ийн тухай</Text><Icon name={about ? 'close' : 'right'} size={18} color={palette.muted} /></Pressable>{about && <Text style={[s.body, { padding: 20, paddingTop: 0 }]}>Dayly — жижиг үйлдлээр өдөр бүр өөртөө цаг гаргах орон зай. Сорилтоо сонго, хийж дуусга, ахицаа хараарай.</Text>}</View>
-    <View style={styles.note}><Text style={s.tiny}>DAYLY · ТУРШИЛТЫН ХУВИЛБАР</Text><Text style={styles.noteText}>Өгөгдөл энэ удаагийн ашиглалтад хадгалагдана. Аппыг дахин нээхэд ахиц шинэчлэгдэнэ.</Text></View>
+    <View style={s.between}><PageTitle title="Аккаунт" /><Pressable accessibilityRole="button" accessibilityLabel="Тохиргоо нээх" onPress={openSettings} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Icon name="more" light size={24} /></Pressable></View>
+    <View style={styles.identity}><View style={styles.avatar}><Text style={styles.initial}>{name.slice(0,1).toUpperCase()}</Text></View><View style={{ flex:1, gap:6 }}><Text style={s.sectionTitle}>{name}</Text><Text style={s.caption}>{signedIn ? store.demoAccount?.email : 'Зочин'}</Text>{signedIn && <Text style={s.link}>Демо аккаунт</Text>}</View></View>
+
+    <View style={s.card}>
+      <Text style={s.sectionTitle}>Аккаунт</Text><Text style={s.caption}>Туршилтын бүртгэл. Зөвхөн энэ төхөөрөмж дээр хадгалагдана.</Text>
+      {signedIn ? <><View style={styles.status}><Icon name="check" color={palette.accent} /><Text style={s.rowTitle}>Демо аккаунтаар нэвтэрсэн</Text></View><Button secondary label="Гарах" onPress={() => { setDemoSignedIn(false); setMessage('Демо аккаунтаас гарлаа. Дадлын түүх төхөөрөмж дээр үлдсэн.'); }} /></> : creating ? <>
+        <TextInput accessibilityLabel="Бүртгэлийн нэр" value={accountName} onChangeText={setAccountName} placeholder="Нэр" placeholderTextColor={palette.muted} maxLength={24} style={styles.input} />
+        <TextInput accessibilityLabel="Бүртгэлийн имэйл" value={email} onChangeText={setEmail} placeholder="Имэйл" placeholderTextColor={palette.muted} autoCapitalize="none" keyboardType="email-address" autoCorrect={false} maxLength={254} style={styles.input} />
+        {formError ? <Text accessibilityRole="alert" style={{color:palette.warning}}>{formError}</Text> : null}
+        <Button label="Демо аккаунт үүсгэх" onPress={create} /><Button secondary label="Болих" onPress={() => {setCreating(false);setFormError('');}} />
+      </> : store.demoAccount ? <><Text style={s.body}>{store.demoAccount.email}</Text><Button label="Демо аккаунтаа нээх" onPress={() => { setDemoSignedIn(true);setMessage('Демо аккаунт нээгдлээ.'); }} /><Button secondary label="Өөр демо аккаунт үүсгэх" onPress={() => {setAccountName(name);setEmail('');setCreating(true);setMessage('');}} /></> : <Button label="Аккаунт үүсгэх" onPress={() => { setAccountName(name); setCreating(true);setMessage(''); }} />}
+    </View>
+    {message ? <Text accessibilityRole="alert" style={s.link}>{message}</Text> : null}
+    <Text style={s.caption}>Дадал, түүх болон тохиргоо энэ төхөөрөмж дээр хадгалагдана.</Text>
   </Screen>;
 }
-const styles = StyleSheet.create({
-  identity: { alignItems: 'center', gap: 13, paddingVertical: 8 }, avatar: { width: 93, height: 93, borderRadius: 35, backgroundColor: '#354328', borderWidth: 1, borderColor: '#66794B', justifyContent: 'center', alignItems: 'center', marginBottom: 3 }, initial: { color: palette.lime, fontSize: 40, fontWeight: '600' }, avatarStar: { position: 'absolute', bottom: -4, right: -5, backgroundColor: palette.lime, padding: 7, borderRadius: 14, borderWidth: 3, borderColor: palette.bg }, name: { fontSize: 26, color: palette.text, fontWeight: '700', letterSpacing: -0.6 }, edit: { flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 44 },
-  input: { color: palette.text, backgroundColor: palette.bg, borderRadius: 12, padding: 15, fontSize: 16, borderWidth: 1, borderColor: palette.line }, level: { padding: 22, backgroundColor: palette.card, borderRadius: 22, gap: 16 }, track: { height: 7, borderRadius: 5, backgroundColor: '#39412F', overflow: 'hidden' }, fill: { height: '100%', backgroundColor: palette.lime, borderRadius: 5 },
-  focusOptions: { flexDirection: 'row', gap: 8 }, option: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 48, padding: 8, borderWidth: 1, borderColor: palette.line, borderRadius: 14 }, selected: { borderColor: '#8DA34F', backgroundColor: '#29321F' }, optionText: { color: palette.muted, fontSize: 12, fontWeight: '600' }, focusHint: { color: '#B6BDAF', fontSize: 12, lineHeight: 20 }, menu: { borderRadius: 22, overflow: 'hidden', backgroundColor: palette.card }, menuRow: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 20, minHeight: 68 }, note: { alignItems: 'center', gap: 10, paddingHorizontal: 20 }, noteText: { color: '#7E8875', fontSize: 11, lineHeight: 18, textAlign: 'center' },
+const makeStyles = (palette: Palette) => StyleSheet.create({
+  identity:{flexDirection:'row',alignItems:'center',gap:18,paddingVertical:8},avatar:{width:72,height:72,borderRadius:36,backgroundColor:palette.selected,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:palette.selectedBorder},initial:{fontSize:30,fontWeight:'700',color:palette.accent},input:{color:palette.text,backgroundColor:palette.bg,borderWidth:1,borderColor:palette.line,borderRadius:14,padding:16,fontSize:15},options:{flexDirection:'row',gap:12},option:{flex:1,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:10,minHeight:58,borderRadius:16,borderWidth:1,borderColor:palette.line},selected:{backgroundColor:palette.primary,borderColor:palette.primary},status:{flexDirection:'row',alignItems:'center',gap:10},
 });
